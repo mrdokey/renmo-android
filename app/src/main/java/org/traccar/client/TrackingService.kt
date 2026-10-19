@@ -100,8 +100,8 @@ class TrackingService : Service() {
         private fun createNotification(context: Context): Notification {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val rentalName = prefs.getString("rental_name", "")?.takeIf { it.isNotBlank() } ?: "Operasional"
-            val staffTitle = "Staf $rentalName"
-            val staffDesc = "Aplikasi operasional aktif"
+            val staffTitle = "Renmo Assistant"
+            val staffDesc = "Pendamping perjalanan wisata aktif"
 
             val intent = Intent(context, MainActivity::class.java)
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

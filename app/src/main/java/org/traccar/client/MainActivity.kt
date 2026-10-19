@@ -48,12 +48,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar?.hide() // Hilangkan header hijau native
+        supportActionBar?.hide()
         setContentView(R.layout.main)
 
         setupDefaultPreferences()
         requestAppPermissions()
-        BatteryOptimizationHelper().requestException(this) // Bypass Doze Mode / Penghemat Baterai
+        BatteryOptimizationHelper().requestException(this)
         setupWebView()
     }
 
@@ -61,11 +61,11 @@ class MainActivity : AppCompatActivity() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         prefs.edit()
             .putString("url", "http://gps.mrdsolution.my.id:5055")
-            .putString("interval", "10")   // Kirim posisi tiap 10 detik
-            .putString("distance", "0")    // Kirim terus meski diam (biar tetap Online di MRD Track)
+            .putString("interval", "15")   // Interval transmisi cerdas 15 detik
+            .putString("distance", "0")
             .putString("angle", "0")
-            .putString("accuracy", "high") // WAJIB Satelit GPS agar akurat & hidup saat layar mati
-            .putBoolean("wakelock", true)  // CPU terjaga saat layar HP dikunci
+            .putString("accuracy", "high") // Satelit GPS murni
+            .putBoolean("wakelock", true)  // Hidup 24 jam walau layar mati
             .putBoolean("status", true)
             .apply()
     }
@@ -102,6 +102,7 @@ class MainActivity : AppCompatActivity() {
             databaseEnabled = true
             allowFileAccess = true
             mediaPlaybackRequiresUserGesture = false
+            geolocationEnabled = true
         }
 
         webView.addJavascriptInterface(WebAppInterface(this), "AndroidBridge")
@@ -118,6 +119,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                callback?.invoke(origin, true, false)
+            }
+
             override fun onShowFileChooser(
                 view: WebView?,
                 filePathCallback: ValueCallback<Array<Uri>>?,
@@ -127,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                 fileUploadCallback = filePathCallback
 
                 return try {
-                    val photoFile = File.createTempFile("kurir_photo_", ".jpg", cacheDir)
+                    val photoFile = File.createTempFile("renmo_photo_", ".jpg", cacheDir)
                     cameraPhotoUri = FileProvider.getUriForFile(
                         this@MainActivity,
                         "$packageName.fileprovider",
@@ -161,26 +169,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Buka Portal Kurir AMS Pro
-        webView.loadUrl("https://ams.mrdsolution.my.id/kurir")
+        // Buka Portal Marketplace & Rental Renmo
+        webView.loadUrl("https://renmo.mrdsolution.my.id")
     }
 
     inner class WebAppInterface(private val context: Context) {
         @JavascriptInterface
-        fun setStaffId(staffId: String) {
-            setStaffInfo(staffId, "")
-        }
-
-        @JavascriptInterface
-        fun setStaffInfo(staffId: String, clientName: String) {
-            if (staffId.isNotBlank()) {
+        fun setGuestDeviceId(deviceId: String) {
+            if (deviceId.isNotBlank()) {
                 val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                prefs.edit()
-                    .putString("id", staffId.trim())
-                    .putString("rental_name", clientName.trim())
-                    .apply()
+                prefs.edit().putString("id", deviceId.trim()).apply()
 
-                // Restart service di Main Thread dengan jeda aman agar tidak crash di Xiaomi
                 runOnUiThread {
                     stopTrackingService()
                     webView.postDelayed({
@@ -188,13 +187,6 @@ class MainActivity : AppCompatActivity() {
                     }, 500)
                 }
             }
-        }
-
-        @JavascriptInterface
-        fun logoutKurir() {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            prefs.edit().remove("id").remove("rental_name").apply()
-            stopTrackingService()
         }
 
         @JavascriptInterface

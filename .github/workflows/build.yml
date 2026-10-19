@@ -1,4 +1,4 @@
-name: Build AMS Kurir (Signed APK & AAB)
+name: Build Renmo (Signed APK & AAB)
 
 on:
   push:
@@ -29,11 +29,11 @@ jobs:
     - name: Upload Official Signed APK
       uses: actions/upload-artifact@v4
       with:
-        name: AMS-Kurir-Signed-APK
+        name: Renmo-Signed-APK
         path: app/build/outputs/apk/**/*.apk
 
     - name: Upload Official Signed AAB (Play Store)
       uses: actions/upload-artifact@v4
       with:
-        name: AMS-Kurir-Signed-AAB
+        name: Renmo-Signed-AAB
         path: app/build/outputs/bundle/regularRelease/*.aab

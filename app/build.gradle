@@ -8,11 +8,11 @@ plugins {
 android {
     compileSdk 36
     defaultConfig {
-        applicationId 'com.mrdsolution.amskurir'
+        applicationId 'com.mrdsolution.renmo'
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 93
-        versionName '7.9'
+        versionCode 1
+        versionName '1.0.0'
         multiDexEnabled true
     }
     namespace 'org.traccar.client'
@@ -36,10 +36,10 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("ams-kurir.jks")
-            storePassword "AmSKurir2026!"
-            keyAlias "amskurir"
-            keyPassword "AmSKurir2026!"
+            storeFile file("renmo.jks")
+            storePassword "RenmoApp2026!"
+            keyAlias "renmo"
+            keyPassword "RenmoApp2026!"
         }
     }
 
