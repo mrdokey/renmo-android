@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity() {
             databaseEnabled = true
             allowFileAccess = true
             mediaPlaybackRequiresUserGesture = false
-            geolocationEnabled = true
+            setGeolocationEnabled(true)
         }
 
         webView.addJavascriptInterface(WebAppInterface(this), "AndroidBridge")
