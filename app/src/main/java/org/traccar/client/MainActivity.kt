@@ -42,6 +42,19 @@ class MainActivity : AppCompatActivity() {
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        if (fineGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Otomatis munculkan dialog "Sepanjang Waktu"
+            backgroundPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        } else {
+            startTrackingService()
+        }
+    }
+
+    // 🌟 Launcher tahap 2: Otomatis memunculkan dialog "Izinkan sepanjang waktu"
+    private val backgroundPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
     ) {
         startTrackingService()
     }
@@ -109,11 +122,58 @@ class MainActivity : AppCompatActivity() {
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                val url = request?.url?.toString() ?: return false
-                if (url.startsWith("tel:") || url.startsWith("whatsapp:") || url.startsWith("https://wa.me/")) {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                val uri = request?.url ?: return false
+                val url = uri.toString()
+
+                // 1. Tangkap custom scheme renmo://track?phone=...&id=...
+                if (url.startsWith("renmo://")) {
+                    val guestId = uri.getQueryParameter("id")
+                    val phone = uri.getQueryParameter("phone")
+                    if (!guestId.isNullOrBlank()) {
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(this@MainActivity)
+                        prefs.edit()
+                            .putString("id", guestId.trim())
+                            .apply()
+                        if (!phone.isNullOrBlank()) {
+                            prefs.edit().putString("phone", phone.trim()).apply()
+                        }
+                        runOnUiThread {
+                            stopTrackingService()
+                            webView.postDelayed({
+                                startTrackingService()
+                            }, 500)
+                        }
+                    }
+                    return true // 👈 Telan skema renmo:// agar TIDAK muncul error di layar!
+                }
+
+                // 2. Loncat ke Google Maps (Arah Wisata / Garasi Rental Klien)
+                if (url.startsWith("geo:") || url.contains("maps.google.") || url.contains("goo.gl/maps") || url.contains("maps.app.goo.gl")) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    } catch (_: Exception) {}
                     return true
                 }
+
+                // 3. Loncat ke WhatsApp atau Telepon
+                if (url.startsWith("tel:") || url.startsWith("whatsapp:") || url.startsWith("https://wa.me/") || url.contains("api.whatsapp.com")) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    } catch (_: Exception) {}
+                    return true
+                }
+
+                // 4. Buka link web luar di browser eksternal HP (bukan di dalam webview Renmo)
+                if (uri.scheme == "http" || uri.scheme == "https") {
+                    val host = uri.host ?: ""
+                    if (!host.contains("renmo.mrdsolution.my.id") && !host.contains("mrddigitalsolution.com")) {
+                        try {
+                            startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        } catch (_: Exception) {}
+                        return true
+                    }
+                }
+
                 return false
             }
         }
